@@ -1,0 +1,329 @@
+---
+title: "MAS6024 Assignment"
+author: "Registration Number: 200206622"
+output:
+  pdf_document: default
+  bookdown::pdf_document2:
+    keep_tex: yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part 1
+1) Creating an 8by8 matrix to accommodate the letters to form a board for the game. 
+2) Creating a function to take the current step as input and returning the next move from the available eight neighboring positions.
+```{r matrix, include=FALSE}
+lgrid <- matrix(NA, nrow = 8, ncol = 8)
+lgrid[1,] <- c("r", "l", "q", "s", "t", "z", "c", "a")
+lgrid[2,] <- c("i", "v", "d", "z", "h", "l", "t", "p")
+lgrid[3,] <- c("u", "r", "o", "y", "w", "c", "a", "c")
+lgrid[4,] <- c("x", "r", "f", "n", "d", "p", "g", "v")
+lgrid[5,] <- c("h", "j", "f", "f", "k", "h", "g", "m")
+lgrid[6,] <- c("k", "y", "e", "x", "x", "g", "k", "i")
+lgrid[7,] <- c("l", "q", "e", "q", "f", "u", "e", "b")
+lgrid[8,] <- c("l", "s", "d", "h", "i", "k", "y", "n")
+```
+Below are two functions defined to compute the next position of the token. get_coordinates() converts the input 'x' from string to a numeric character for the purpose of simplification of the calculation further.
+next_square() gets the starting point as the input and returns the next move. The input acts as a central element and the output is one of the probable eight neighboring positions with respect to the central element.
+```{r}
+get_coordinates <- function(){
+  if (x == "A"){
+    x<<-1
+  } else if (x == "B"){
+    x<<-2
+  } else if (x == "C"){
+    x<<-3
+  } else if (x == "D"){
+    x<<-4
+  } else if (x == "E"){
+    x<<-5
+  } else if (x == "F"){
+    x<<-6
+  } else if (x == "F"){
+    x<<-7
+  } else if (x == "H"){
+    x<<-8
+  }
+  
+}
+
+next_square <-function(){
+  movement<-c("up","upleft","upright","right","left","down","downright","downleft")
+  direction<-sample(movement,size=1)
+  x1<-0
+  y1<-0
+  if ( direction == "up") {
+    x1 = x-1
+    y1 = y
+  } else if ( direction == "upleft") {
+    y1 = y-1
+    x1 = x-1
+  } else if ( direction == "upright") {
+    y1 = y+1
+    x1 = x-1
+  } else if ( direction == "right") {
+    x1 = x
+    y1 = y+1
+  } else if ( direction == "left") {
+    y1 = y-1
+    x1 = x
+  } else if ( direction == "downleft") {
+    y1 = y-1
+    x1 = x+1
+  } else if ( direction == "downright") {
+    y1 = y+1
+    x1 = x+1
+  } else if (direction == "down") {
+    x1 = x+1
+    y1 = y
+  }
+  x<<-x1
+  y<<-y1
+  moves<<- moves + 1
+  return(lgrid[x1,y1])
+}
+
+```
+Getting the input from the user:
+x : Row
+y : Column
+Lets say we begin at D4('n'), it can take any of the 'o','y','w','d','k','f','f','f'(clockwise) as its next position 
+```{r}
+x="D"
+y=4
+
+moves=0
+
+get_coordinates()
+new <- next_square()
+new
+```
+We get the next move, this will now be the start position for the token. Whenever the token traverses in any direction it gets counted as a move.
+
+check_edge() function checks whether the start position for predicting the next move is on the edge. It checks if the token has all the boundary elements
+```{r}
+check_edge <- function(){
+  x1<-0
+  y1<-0
+  x1<-x-1
+  y1<-y
+  if (x1<1){
+    x <<- sample(1:8,1)
+    y <<- sample(1:8,1)
+    moves<<- moves + 1
+    check_edge()
+  } else {
+    x1<-0
+    y1<-0
+    x1=x+1
+    y1=y
+    if (x1>8) {
+      x <<- sample(1:8,1)
+      y <<- sample(1:8,1)
+      moves<<- moves + 1
+      check_edge()
+    } else {
+      x1<-0
+      y1<-0
+      x1=x
+      y1=y-1
+      if (y1<1) {
+        x <<- sample(1:8,1)
+        y <<- sample(1:8,1)
+        moves<<- moves + 1
+        check_edge()
+      } else {
+        x1<-0
+        y1<-0
+        x1=x
+        y1=y+1
+        if (y1>8) {
+          x <<- sample(1:8,1)
+          y <<- sample(1:8,1)
+          moves<<- moves + 1
+          check_edge()
+        } else{
+          #          return(FALSE)
+        }
+      }
+    }
+  }
+}
+
+```
+check_green() does a basic check if the token lands on one of the four green tiles. If the token falls on one such tile, depending on the probability one of the two events occurs
+
+```{r}
+check_green <- function(){
+  if ( (x == 2 && y == 6) ||
+       (x == 3 && y == 7) ||
+       (x == 6 && y == 2) ||
+       (x == 7 && y == 3) ){
+    return(TRUE)
+  } else {
+    return(FALSE)
+  }
+}
+```
+## Part 2
+The rules of the games are two-fold. Collecting first three letters at random while satisfying the competing requirements of completing the game and then collecting the remaining two letters in a way which when added to the initial collection of three letters form a palindrome, i.e. the next two letters will always be a subset of the initial three letters.
+The collection of the first three letters though random are only accepted when their frequency is higher as compared to others. This will in-turn reduce the steps in finding the next two letters since the likelihood of finding those would be slightly higher than the rest.
+
+## Part 3
+count_moves() is the main function which returns the number of moves taken for the formation of a palindrome when supplied with the initial position of the token. The code comprises of three parts, firstly filling of the initial three letters in the collection based on frequency. Secondly, filling the fourth letter, which would be from among the initial three acquired letters. The loop continues until it finds one such letter. And, finally, for the last letter, we create a temporary collection which will initially hold all the four letter acquired so far. The letter which has maximum occurrence in the collection is omitted and the next letter is obtained from among the remaining letter so as to be in accordance with the rules of forming a palindrome. In case all the four letters acquired are the same then the above logic is mended and the same letter is searched.
+```{r}
+print=""
+count_moves <- function(){
+  get_coordinates()
+  moves<<- 0
+  collection <- c()
+  moves <<- moves + 1
+  if (table(lgrid)[[lgrid[x,y]]] >= 3) {
+    collection <- c(collection, lgrid[x,y])      
+  }
+  while(length(collection) < 5) {
+    new=""
+    if (length(collection) < 3) {
+      check_edge()
+      new <- next_square()
+      green<-check_green()
+      if (green != TRUE && (table(lgrid)[[lgrid[x,y]]] >= 3)) {
+        collection <- c(collection, lgrid[x,y])
+      } else if (green == TRUE) {
+        condition = sample(1:2, size=1, prob=c(p,1-p))
+        if (condition == 1) {
+          collection <- c("f","f","h","k")
+        } else if (condition == 2) {
+          collection <- collection[collection!=lgrid[x,y]]
+        }
+      }
+    } else if (length(collection)==3){
+      while (!is.element(new, collection) ) {
+        check_edge()
+        new<- next_square()
+        green<-check_green()
+        if (green == TRUE) {
+          condition = sample(1:2, size=1, prob=c(p,1-p))
+          if (condition == 1) {
+            collection <- c("f","f","h","k")
+          } else if (condition == 2) {
+            collection <- collection[collection!=lgrid[x,y]]
+          }
+          break
+        }
+      }
+      if (green != TRUE){
+        collection <- c(collection, lgrid[x,y])
+      }
+      
+    } else if (length(collection)==4){
+      temp_collection<-collection
+      counts <- table(temp_collection)
+      del<-c()
+      del<-names(counts)[which.max(counts)]
+      temp_collection=temp_collection[temp_collection!= del]
+      if (length(temp_collection) == 0) {
+        #temp_collection =del
+        check_edge()
+        new<- next_square()
+        green <- check_green()
+        if (green == TRUE) {
+          condition = sample(1:2, size=1, prob=c(p,1-p))
+          if (condition == 1) {
+            collection <<- c("f","f","h","k")
+          } else if (condition == 2) {
+            collection <<- collection[collection!=lgrid[x,y]]
+          }
+        } else {
+          collection <- c(collection, lgrid[x,y])
+        }
+      } else {
+        while (!is.element(new, temp_collection) ) {
+          check_edge()
+          new<- next_square()
+          green <- check_green()
+          if (green == TRUE) {
+            condition = sample(1:2, size=1, prob=c(p,1-p))
+            if (condition == 1) {
+              collection <<- c("f","f","h","k")
+            } else if (condition == 2) {
+              collection <<- collection[collection!=lgrid[x,y]]
+            }
+            break
+          }
+        }
+        if (green != TRUE) {
+          collection <- c(collection, lgrid[x,y])
+          if (print == "t") {
+            counter<<-counter+1
+            cat("\n","counter:",counter,"\n")
+            cat("\n","Palindrome",collection,"\n","moves:",moves,"\n")
+            cat("Number of moves:",moves)
+          }
+        }
+      }
+      
+    }
+    
+  }
+  return(moves)
+}
+
+```
+## Part 4
+Establishing relationship with the number of moves to complete the game and the specified probability(p) with the token initially placed at D4.
+```{r}
+x="D"
+y=4
+probabilities<-c(0.1,0.3,0.5,0.7,0.9)
+numberofmoves<-c()
+for (i in 1:length(probabilities)) {
+  p=probabilities[i]
+  dist_of_num_moves <- replicate(1000, count_moves())
+  numberofmoves<-c(numberofmoves,mean(dist_of_num_moves))
+  cat("Average number of moves with proability ",p," :", 
+      mean(dist_of_num_moves),"\n")
+}
+
+```
+We could see that with increasing probabilities, the number of moves required to form a palindrome goes down. Probably because when the probability is high, it means the likelihood of the event that the letters in the collection are replaced with the letters F, F, H and K is higher. Since we are only left with finding only one letter, the number of moves required would be relatively less.
+
+## Part 5
+Comparing the distributions of the number of moves required to complete the game are identical for the starting points D4 with p=0.95 and F6 with p=0.05.
+```{r}
+x="D"
+y=4
+p=0.95
+dist_of_num_moves <- replicate(1000, count_moves())
+hist(dist_of_num_moves, main ="Histogram of the number of moves to complete the 
+                              game", xlab = "Number of Moves" )
+```
+
+```{r}
+cat("Average number of moves starting at D4 and proability ",p," :", 
+    mean(dist_of_num_moves),"\n")
+```
+```{r}
+x="F"
+y=6
+p=0.05
+dist_of_num_moves <- replicate(1000, count_moves())
+hist(dist_of_num_moves, main ="Histogram of the number of moves to complete the 
+                              game", xlab = "Number of Moves" )
+
+```
+
+```{r}
+cat("Average number of moves starting at D4 and proability ",p," :", 
+    mean(dist_of_num_moves),"\n")
+```
+## Part 6
+Assessing the evidence that E(XA)=E(XB) for two specific squares A and B.
+null hypothesis H0 : E(XA)=E(XB)
+```{r}
+squareA <- c(25,13,16,24,11,12,24,26,15,19,34)
+squareB <- c(35,41,23,26,18,15,33,42,18,47,21,26)
+t.test(x = squareA, y = squareB, alternative = "two.sided", paired = F)
+```
+
